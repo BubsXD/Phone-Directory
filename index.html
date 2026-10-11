@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Algorithmic Phone Directory | DSA Project</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="app-title">Algorithmic Phone Directory</h1>
+          <p class="app-subtitle">Built with pure HTML, CSS & JavaScript • Custom Data Structures & Algorithms</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-pill" title="Total contacts loaded in directory">
+          <span class="stat-label">Contacts:</span>
+          <span class="stat-value" id="stat-total-contacts">0</span>
+        </div>
+        <div class="stat-pill" title="Custom Hash Table with Chaining">
+          <span class="stat-label">Hash Buckets:</span>
+          <span class="stat-value" id="stat-hash-buckets">53</span>
+        </div>
+        <div class="stat-pill" title="Custom Trie Nodes">
+          <span class="stat-label">Trie Nodes:</span>
+          <span class="stat-value" id="stat-trie-nodes">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Demo Notice Banner -->
+  <div class="demo-notice-bar">
+    <div class="demo-notice-content">
+      <span class="badge-tag">Demo Data</span>
+      <span>All preloaded phone numbers and contacts are mock, randomly generated dummy entries created exclusively for academic demonstration and DSA viva examination.</span>
+    </div>
+  </div>
+
+  <!-- Main App Layout -->
+  <main class="main-container">
+    <!-- Left Sidebar: Actions & Add Contact -->
+    <aside class="sidebar">
+      <!-- Add Contact Card -->
+      <section class="card form-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Add New Contact</h2>
+            <p class="card-desc">Inserts into Trie (Name) & Hash Table (Phone), then re-sorts via Merge Sort.</p>
+          </div>
+          <span class="dsa-micro-badge">O(L) + O(1)</span>
+        </div>
+
+        <form id="add-contact-form" novalidate>
+          <div class="form-group">
+            <label for="contact-name">Full Name <span class="required">*</span></label>
+            <input type="text" id="contact-name" placeholder="e.g. Aman Sharma" required maxlength="50" autocomplete="off">
+            <small class="field-hint">Alphabets & spaces only</small>
+          </div>
+
+          <div class="form-group">
+            <label for="contact-phone">Phone Number (10 Digits) <span class="required">*</span></label>
+            <div class="phone-input-wrapper">
+              <span class="country-prefix">+91</span>
+              <input type="tel" id="contact-phone" placeholder="9876543210" required maxlength="10" autocomplete="off">
+            </div>
+            <small class="field-hint">Must be 10 digits starting with 6, 7, 8, or 9</small>
+          </div>
+
+          <div class="form-group">
+            <label for="contact-category">Category</label>
+            <select id="contact-category">
+              <option value="Friends">Friends</option>
+              <option value="Work">Work</option>
+              <option value="Family">Family</option>
+              <option value="College" selected>College</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+
+          <div id="form-error-msg" class="form-error" style="display: none;"></div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-add-contact">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Save Contact
+          </button>
+        </form>
+      </section>
+
+      <!-- Quick Actions Card -->
+      <section class="card action-card">
+        <h3 class="card-subtitle">Demo Controls</h3>
+        <div class="action-buttons-grid">
+          <button class="btn btn-outline" id="btn-load-more" title="Generate and insert 10 fresh random Indian contacts">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            +10 Random Contacts
+          </button>
+          <button class="btn btn-outline" id="btn-reset-data" title="Reload original 30 sample contacts">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 2v6h6"></path>
+              <path d="M21 12A9 9 0 0 0 6 5.3L3 8"></path>
+              <path d="M21 22v-6h-6"></path>
+              <path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"></path>
+            </svg>
+            Reset Default 30
+          </button>
+        </div>
+      </section>
+
+      <!-- DSA Summary Card for Viva Prep -->
+      <section class="card viva-card">
+        <h3 class="card-subtitle">DSA Quick Reference</h3>
+        <ul class="viva-list">
+          <li>
+            <div class="viva-item-header">
+              <span class="viva-badge trie-badge">Trie</span>
+              <span class="viva-comp">O(L + K)</span>
+            </div>
+            <p class="viva-text">Prefix tree for real-time keystroke suggestions where L = prefix length, K = matching subtree nodes.</p>
+          </li>
+          <li>
+            <div class="viva-item-header">
+              <span class="viva-badge hash-badge">Hash Table</span>
+              <span class="viva-comp">O(1) Avg</span>
+            </div>
+            <p class="viva-text">Polynomial rolling hash with separate chaining linked lists for collision resolution.</p>
+          </li>
+          <li>
+            <div class="viva-item-header">
+              <span class="viva-badge merge-badge">Merge Sort</span>
+              <span class="viva-comp">O(N log N)</span>
+            </div>
+            <p class="viva-text">Stable divide-and-conquer algorithm to maintain sorted A-Z directory listing.</p>
+          </li>
+          <li>
+            <div class="viva-item-header">
+              <span class="viva-badge binary-badge">Binary Search</span>
+              <span class="viva-comp">O(log N)</span>
+            </div>
+            <p class="viva-text">Iterative search on sorted array for exact name lookup by halving search space.</p>
+          </li>
+        </ul>
+      </section>
+    </aside>
+
+    <!-- Right Content Area: Multi-Search & Directory Views -->
+    <section class="content-area">
+      <!-- Navigation Tabs -->
+      <nav class="view-tabs" role="tablist">
+        <button class="tab-btn active" data-tab="name-search" role="tab" id="tab-btn-name">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          Name Search (Trie & Binary)
+        </button>
+        <button class="tab-btn" data-tab="phone-search" role="tab" id="tab-btn-phone">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          </svg>
+          Phone Lookup (Hash Table)
+        </button>
+        <button class="tab-btn" data-tab="all-contacts" role="tab" id="tab-btn-all">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          All Contacts (Merge Sorted A-Z)
+        </button>
+        <button class="tab-btn" data-tab="dsa-inspector" role="tab" id="tab-btn-inspector">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"><polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          DSA Internals & Hash Buckets
+        </button>
+      </nav>
+
+      <!-- TAB 1: Name Search (Trie Prefix Search & Binary Search) -->
+      <div class="tab-content active" id="tab-name-search">
+        <div class="search-panel card">
+          <div class="search-box-row">
+            <div class="search-input-wrapper">
+              <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="name-search-input" placeholder="Type a prefix (e.g., 'Am', 'Poo', 'Roh', 'An')..." autocomplete="off">
+              <button class="clear-input-btn" id="clear-name-search" title="Clear search" style="display: none;">&times;</button>
+            </div>
+            <div class="search-button-group">
+              <button class="btn btn-secondary" id="btn-exact-binary-search" title="Run Binary Search O(log N) on sorted array for exact name">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                Exact Name (Binary Search)
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Prefix Chips -->
+          <div class="sample-chips-row">
+            <span class="chips-label">Try shared prefixes:</span>
+            <button class="chip" data-prefix="Am">Am- (Aman, Amit, Amey)</button>
+            <button class="chip" data-prefix="An">An- (Ananya, Anjali, Ankit)</button>
+            <button class="chip" data-prefix="Poo">Poo- (Pooja, Poonam)</button>
+            <button class="chip" data-prefix="Roh">Roh- (Rohan, Rohit)</button>
+            <button class="chip" data-prefix="Vik">Vik- (Vikas, Vikram)</button>
+          </div>
+        </div>
+
+        <!-- Live DSA Execution Info Box -->
+        <div class="dsa-telemetry-panel" id="name-search-dsa-telemetry">
+          <div class="telemetry-header">
+            <div class="telemetry-title">
+              <span class="pulse-indicator"></span>
+              <strong id="telemetry-algo-title">Trie Prefix Autocomplete</strong>
+            </div>
+            <span class="complexity-badge" id="telemetry-complexity">Time: O(L + K) | Space: O(N · L)</span>
+          </div>
+          <div class="telemetry-body" id="telemetry-description">
+            Type any letter above to trigger real-time Trie branch traversal. Prefix characters traverse Trie edges; subtree leaves yield matching contacts.
+          </div>
+          <div class="telemetry-metrics" id="telemetry-metrics">
+            <span class="metric-pill">Status: <b>Ready</b></span>
+            <span class="metric-pill">Prefix Length: <b id="stat-prefix-len">0</b></span>
+            <span class="metric-pill">Matched Count: <b id="stat-matched-count">0</b></span>
+            <span class="metric-pill">Search Latency: <b id="stat-search-time">0.00 ms</b></span>
+          </div>
+        </div>
+
+        <!-- Search Results List -->
+        <div class="results-container">
+          <div class="results-header">
+            <h3 class="results-heading" id="results-count-heading">Search Suggestions</h3>
+            <span class="results-subtext" id="results-subtext">Showing live autocomplete matches from Trie</span>
+          </div>
+          <div class="contact-cards-grid" id="name-results-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Phone Number Search (Hash Table Chaining) -->
+      <div class="tab-content" id="tab-phone-search">
+        <div class="search-panel card">
+          <div class="search-box-row">
+            <div class="search-input-wrapper">
+              <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+              <input type="tel" id="phone-search-input" placeholder="Enter 10-digit phone number (e.g. 9876543210)..." maxlength="10" autocomplete="off">
+              <button class="clear-input-btn" id="clear-phone-search" title="Clear search" style="display: none;">&times;</button>
+            </div>
+            <button class="btn btn-primary" id="btn-hash-search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              Lookup Number
+            </button>
+          </div>
+          <p class="search-tip">💡 Tip: Click any phone number anywhere in the directory to auto-fill and test the Hash Table lookup!</p>
+        </div>
+
+        <!-- Phone Lookup DSA Info -->
+        <div class="dsa-telemetry-panel" id="phone-search-dsa-telemetry">
+          <div class="telemetry-header">
+            <div class="telemetry-title">
+              <span class="pulse-indicator"></span>
+              <strong id="phone-algo-title">Custom Hash Table with Separate Chaining</strong>
+            </div>
+            <span class="complexity-badge" id="phone-complexity">Time: O(1) Avg (O(N) Worst) | Space: O(M + N)</span>
+          </div>
+          <div class="telemetry-body" id="phone-telemetry-description">
+            Computes polynomial rolling hash: <code>hash = (&Sigma; s[i] &times; 31<sup>L-1-i</sup>) mod 53</code>. Directly accesses bucket index and traverses linked list chain.
+          </div>
+          <div class="telemetry-metrics" id="phone-telemetry-metrics">
+            <span class="metric-pill">Bucket Index: <b id="stat-phone-bucket">-</b></span>
+            <span class="metric-pill">Chain Steps: <b id="stat-phone-steps">0</b></span>
+            <span class="metric-pill">Collisions in Bucket: <b id="stat-phone-collisions">0</b></span>
+            <span class="metric-pill">Lookup Latency: <b id="stat-phone-time">0.00 ms</b></span>
+          </div>
+        </div>
+
+        <!-- Phone Result -->
+        <div class="results-container">
+          <div class="contact-cards-grid" id="phone-result-card-container">
+            <!-- Dynamically populated single card or empty state -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: All Contacts (Merge Sorted A-Z) -->
+      <div class="tab-content" id="tab-all-contacts">
+        <div class="toolbar-card card">
+          <div class="toolbar-left">
+            <div class="sort-indicator">
+              <span class="dsa-tag merge-tag">Sorted via Merge Sort</span>
+              <span class="complexity-badge">O(N log N) Divide &amp; Conquer</span>
+            </div>
+            <span class="toolbar-count" id="all-contacts-count">30 Contacts</span>
+          </div>
+          <div class="toolbar-right">
+            <label for="sort-direction-select">Order:</label>
+            <select id="sort-direction-select" class="sort-select">
+              <option value="asc">A &rarr; Z (Alphabetical)</option>
+              <option value="desc">Z &rarr; A (Reverse)</option>
+            </select>
+            <button class="btn btn-sm btn-outline" id="btn-re-mergesort" title="Re-run custom Merge Sort on contact list">
+              Run Merge Sort
+            </button>
+          </div>
+        </div>
+
+        <div class="results-container">
+          <div class="contact-cards-grid" id="all-contacts-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: DSA Internals & Hash Bucket Visualizer -->
+      <div class="tab-content" id="tab-dsa-inspector">
+        <div class="inspector-grid">
+          <!-- Hash Table Bucket Visualizer Card -->
+          <div class="card inspector-card">
+            <div class="inspector-card-header">
+              <div>
+                <h3 class="inspector-title">Hash Table Bucket Distribution</h3>
+                <p class="inspector-subtitle">Separate Chaining visualization across 53 prime buckets</p>
+              </div>
+              <span class="dsa-micro-badge">Capacity: 53</span>
+            </div>
+            <div class="hash-stats-row" id="hash-table-stats-bar">
+              <!-- Populated by JS -->
+            </div>
+            <div class="bucket-map-container" id="hash-bucket-map">
+              <!-- Mini bucket grid -->
+            </div>
+          </div>
+
+          <!-- Complexity & Operations Matrix Card -->
+          <div class="card inspector-card">
+            <div class="inspector-card-header">
+              <div>
+                <h3 class="inspector-title">Data Structures & Algorithm Complexity Matrix</h3>
+                <p class="inspector-subtitle">Theoretical vs. Implementation details for Viva</p>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="dsa-table">
+                <thead>
+                  <tr>
+                    <th>Operation</th>
+                    <th>Data Structure / Algo</th>
+                    <th>Time Complexity</th>
+                    <th>Space Complexity</th>
+                    <th>Collision / Case</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Prefix Autocomplete</strong></td>
+                    <td>Trie (Prefix Tree)</td>
+                    <td><code>O(L + K)</code></td>
+                    <td><code>O(N &times; L)</code></td>
+                    <td>L = prefix length, K = match size</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Number Lookup</strong></td>
+                    <td>Hash Table (Chaining)</td>
+                    <td><code>O(1) Avg</code> / <code>O(N) Worst</code></td>
+                    <td><code>O(M + N)</code></td>
+                    <td>M = 53 buckets, linked list nodes</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Exact Name Search</strong></td>
+                    <td>Binary Search</td>
+                    <td><code>O(log N)</code></td>
+                    <td><code>O(1)</code></td>
+                    <td>Requires sorted array (0-based)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Directory Sort</strong></td>
+                    <td>Merge Sort</td>
+                    <td><code>O(N log N)</code></td>
+                    <td><code>O(N)</code></td>
+                    <td>Guaranteed stable, all cases</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Contact Insertion</strong></td>
+                    <td>Trie + Hash + Re-sort</td>
+                    <td><code>O(L) + O(1) + O(N log N)</code></td>
+                    <td><code>O(1)</code> amortized</td>
+                    <td>Synchronized across all 3 structures</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Contact Deletion</strong></td>
+                    <td>Trie + Hash + Array Filter</td>
+                    <td><code>O(L) + O(1) + O(N)</code></td>
+                    <td><code>O(1)</code></td>
+                    <td>Removes node recursively in Trie</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <p>DSA Mini Project: Algorithmic Phone Directory • Implemented without external libraries or built-in Map/Set/sort</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
