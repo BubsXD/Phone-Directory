@@ -4,7 +4,7 @@
  * Data Structures & Algorithms Implementation in Pure JavaScript
  * 
  * CORE DATA STRUCTURES IMPLEMENTED FROM SCRATCH:
- * 1. Trie (Prefix Tree)              -> Autocomplete prefix search by name
+ * 1. Tree (Prefix Tree)              -> Autocomplete prefix search by name
  * 2. Hash Table (Separate Chaining)  -> O(1) exact lookup by 10-digit phone number
  * 3. Merge Sort                      -> O(N log N) stable sorting of contacts A-Z
  * 4. Binary Search                   -> O(log N) exact name search on sorted array
@@ -14,6 +14,27 @@
  */
 
 /* ============================================================================
+ * PHONE NUMBER SANITIZER UTILITY
+ * Normalizes any phone input into a clean 10-digit string.
+ * Strips leading +91 or 91, spaces, dashes, parentheses, and non-numeric chars.
+ * ============================================================================ */
+function cleanPhoneNumber(rawPhone) {
+  if (rawPhone === null || rawPhone === undefined) return '';
+  let str = String(rawPhone).trim();
+  // Remove spaces, hyphens, brackets, dots
+  str = str.replace(/[\s\-\(\)\.]/g, '');
+  // Remove international prefix +91
+  if (str.startsWith('+91')) {
+    str = str.slice(3);
+  } else if (str.startsWith('91') && str.length > 10) {
+    str = str.slice(2);
+  }
+  // Strip any remaining non-digit characters
+  str = str.replace(/\D/g, '');
+  return str;
+}
+
+/* ============================================================================
  * 1. CONTACT ENTITY MODEL
  * ============================================================================ */
 class Contact {
@@ -21,26 +42,26 @@ class Contact {
    * Represents a single directory contact.
    * @param {string} id - Unique identifier (timestamp + random string)
    * @param {string} name - Contact full name
-   * @param {string} phone - 10-digit mobile number
+   * @param {string} phone - 10-digit mobile number string
    * @param {string} category - Category tag (College, Friends, Work, Family, General)
    */
   constructor(id, name, phone, category = 'College') {
     this.id = id;
     this.name = name.trim();
-    this.phone = phone.trim();
+    this.phone = cleanPhoneNumber(phone);
     this.category = category;
     this.createdAt = Date.now();
   }
 }
 
 /* ============================================================================
- * 2. TRIE (PREFIX TREE) IMPLEMENTATION
+ * 2. TREE (PREFIX TREE) IMPLEMENTATION
  * ============================================================================
  * 
  * VIVA EXPLANATION:
- * - Why Trie?
+ * - Why Tree (Prefix Tree)?
  *   A standard array search for prefix takes O(N * L) where N is number of contacts
- *   and L is prefix length. A Trie preprocesses strings such that locating all
+ *   and L is prefix length. A Tree preprocesses strings such that locating all
  *   words with prefix of length L takes only O(L + K) time, where K is the number
  *   of matching nodes in the subtree, completely INDEPENDENT of total contacts N!
  * 
@@ -51,10 +72,10 @@ class Contact {
  *   - Space Complexity: O(N * L) in the worst case (branching factor bounded by alphabet).
  * ============================================================================ */
 
-class TrieNode {
+class TreeNode {
   constructor() {
     // Plain JavaScript object used as a character map (NO ES6 Map/Set used)
-    // Keys are single lowercase characters; values are child TrieNode instances.
+    // Keys are single lowercase characters; values are child TreeNode instances.
     this.children = {};
 
     // Indicates whether one or more contact names terminate at this exact node.
@@ -66,14 +87,14 @@ class TrieNode {
   }
 }
 
-class Trie {
+class Tree {
   constructor() {
-    this.root = new TrieNode();
+    this.root = new TreeNode();
     this.nodeCount = 1; // root node
   }
 
   /**
-   * Inserts a contact name into the Trie.
+   * Inserts a contact name into the Tree.
    * Time Complexity: O(L) where L = name.length
    * Space Complexity: O(L) in the worst case if all characters are new nodes
    * 
@@ -87,7 +108,7 @@ class Trie {
     for (let i = 0; i < cleanName.length; i++) {
       const char = cleanName[i];
       if (!current.children[char]) {
-        current.children[char] = new TrieNode();
+        current.children[char] = new TreeNode();
         this.nodeCount++;
       }
       current = current.children[char];
@@ -104,7 +125,7 @@ class Trie {
    *   - K is number of nodes in the subtree explored to collect words
    * 
    * @param {string} prefix - The search prefix
-   * @returns {{ results: Contact[], steps: number, nodesExplored: number }}
+   * @returns {{ results: Contact[], steps: number, nodesExplored: number, durationMs: number }}
    */
   searchPrefix(prefix) {
     const startTime = performance.now();
@@ -155,7 +176,7 @@ class Trie {
   }
 
   /**
-   * Deletes a contact from the Trie and recursively prunes unused nodes.
+   * Deletes a contact from the Tree and recursively prunes unused nodes.
    * Time Complexity: O(L) where L = name.length
    * 
    * @param {string} name - Contact name
@@ -239,12 +260,12 @@ class Trie {
 class HashNode {
   /**
    * Linked list node for collision chaining.
-   * @param {string} key - The 10-digit phone number
+   * @param {string} key - The 10-digit phone number string
    * @param {Contact} value - The contact object
    * @param {HashNode|null} next - Pointer to the next node in chain
    */
   constructor(key, value, next = null) {
-    this.key = key;
+    this.key = String(key);
     this.value = value;
     this.next = next;
   }
@@ -267,17 +288,24 @@ class HashTable {
   /**
    * Polynomial Rolling Hash Function.
    * Computes: (sum of charCode * 31^(L-1-i)) mod capacity
-   * @param {string} key - Key string (e.g., 10-digit phone)
+   * Guaranteed to return an integer index in range [0, capacity - 1]
+   * 
+   * @param {string} key - Key string (10-digit phone)
    * @returns {number} Bucket index in range [0, capacity - 1]
    */
   hash(key) {
     const P = 31;
     let hashVal = 0;
-    const strKey = String(key);
+    const strKey = String(key).trim();
+    if (strKey.length === 0) return 0;
+
     for (let i = 0; i < strKey.length; i++) {
       hashVal = (hashVal * P + strKey.charCodeAt(i)) % this.capacity;
     }
-    return Math.abs(hashVal);
+
+    // Mathematical guarantee against negative modulo or NaN
+    hashVal = (hashVal % this.capacity + this.capacity) % this.capacity;
+    return Math.floor(hashVal);
   }
 
   /**
@@ -285,18 +313,19 @@ class HashTable {
    * Average Time: O(1)
    * Worst Case Time: O(N)
    * 
-   * @param {string} key - 10-digit phone number
+   * @param {string} key - 10-digit phone number string
    * @param {Contact} value - Contact object
    * @returns {{ bucketIndex: number, collisions: number, updated: boolean }}
    */
   insert(key, value) {
-    const index = this.hash(key);
+    const cleanKey = String(key).trim();
+    const index = this.hash(cleanKey);
     let current = this.buckets[index];
     let collisions = 0;
 
     // Check if key already exists in this chain (update case)
     while (current !== null) {
-      if (current.key === key) {
+      if (current.key === cleanKey) {
         current.value = value;
         return { bucketIndex: index, collisions, updated: true };
       }
@@ -305,7 +334,7 @@ class HashTable {
     }
 
     // Insert new node at head of chain (O(1) insertion)
-    const newNode = new HashNode(key, value, this.buckets[index]);
+    const newNode = new HashNode(cleanKey, value, this.buckets[index]);
     this.buckets[index] = newNode;
     this.size++;
 
@@ -314,45 +343,50 @@ class HashTable {
 
   /**
    * Searches for a contact by exact phone number.
+   * Walks the entire chain in the bucket and compares with ===.
    * Average Time: O(1)
    * Worst Case Time: O(N)
    * 
-   * @param {string} key - 10-digit phone number
-   * @returns {{ contact: Contact|null, bucketIndex: number, steps: number, collisions: number, durationMs: number }}
+   * @param {string} key - 10-digit phone number string
+   * @returns {{ contact: Contact|null, bucketIndex: number, steps: number, chainLength: number, collisions: number, durationMs: number }}
    */
   search(key) {
     const startTime = performance.now();
-    const index = this.hash(key);
+    const cleanKey = String(key).trim();
+    const index = this.hash(cleanKey);
     let current = this.buckets[index];
     let steps = 0;
-    let collisions = 0;
+    let chainLength = 0;
 
+    // Calculate total chain length in this bucket
+    let counter = this.buckets[index];
+    while (counter !== null) {
+      chainLength++;
+      counter = counter.next;
+    }
+
+    // Traverse the chain comparing exact key
     while (current !== null) {
       steps++;
-      if (current.key === key) {
+      if (current.key === cleanKey) {
         return {
           contact: current.value,
           bucketIndex: index,
           steps,
-          collisions: steps - 1,
+          chainLength,
+          collisions: chainLength > 1 ? chainLength - 1 : 0,
           durationMs: performance.now() - startTime
         };
       }
       current = current.next;
     }
 
-    // Count collisions if bucket had other items
-    let chainCounter = this.buckets[index];
-    while (chainCounter) {
-      collisions++;
-      chainCounter = chainCounter.next;
-    }
-
     return {
       contact: null,
       bucketIndex: index,
       steps,
-      collisions,
+      chainLength,
+      collisions: chainLength > 1 ? chainLength - 1 : 0,
       durationMs: performance.now() - startTime
     };
   }
@@ -362,16 +396,17 @@ class HashTable {
    * Average Time: O(1)
    * Worst Case Time: O(N)
    * 
-   * @param {string} key - Phone number
+   * @param {string} key - Phone number string
    * @returns {boolean} Whether node was found and removed
    */
   delete(key) {
-    const index = this.hash(key);
+    const cleanKey = String(key).trim();
+    const index = this.hash(cleanKey);
     let current = this.buckets[index];
     let prev = null;
 
     while (current !== null) {
-      if (current.key === key) {
+      if (current.key === cleanKey) {
         if (prev === null) {
           // Deleting head node
           this.buckets[index] = current.next;
@@ -565,12 +600,12 @@ function binarySearchExactName(sortedContacts, targetName) {
 
 /* ============================================================================
  * 6. PHONE DIRECTORY CONTROLLER
- * Synchronizes Trie, Hash Table, and Merge Sorted Array
+ * Synchronizes Tree, Hash Table, and Merge Sorted Array
  * ============================================================================ */
 
 class PhoneDirectory {
   constructor() {
-    this.trie = new Trie();
+    this.tree = new Tree();
     this.hashTable = new HashTable(53);
     this.contacts = [];      // Raw array
     this.sortedContacts = [];// Array maintained in sorted order via Merge Sort
@@ -580,13 +615,13 @@ class PhoneDirectory {
    * Adds a new contact into all 3 data structures.
    * Validation & Synchronization:
    * 1. Check for duplicate phone number via Hash Table in O(1)
-   * 2. Insert into Trie in O(L)
+   * 2. Insert into Tree in O(L)
    * 3. Insert into Hash Table in O(1)
    * 4. Add to array and re-sort via Merge Sort in O(N log N)
    */
   addContact(name, phone, category = 'College') {
-    // Validation: 10-digit numeric check
-    const cleanPhone = phone.trim();
+    // Clean and validate 10-digit numeric check
+    const cleanPhone = cleanPhoneNumber(phone);
     if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
       throw new Error("Phone number must be exactly 10 digits starting with 6, 7, 8, or 9.");
     }
@@ -606,8 +641,8 @@ class PhoneDirectory {
     const id = 'c_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
     const newContact = new Contact(id, cleanName, cleanPhone, category);
 
-    // 1. Insert into Trie
-    this.trie.insert(cleanName, newContact);
+    // 1. Insert into Tree
+    this.tree.insert(cleanName, newContact);
 
     // 2. Insert into Hash Table
     this.hashTable.insert(cleanPhone, newContact);
@@ -622,7 +657,7 @@ class PhoneDirectory {
   }
 
   /**
-   * Deletes contact consistently across Trie, Hash Table, and sorted list.
+   * Deletes contact consistently across Tree, Hash Table, and sorted list.
    */
   deleteContact(contactId) {
     let targetContact = null;
@@ -638,11 +673,11 @@ class PhoneDirectory {
 
     if (!targetContact) return false;
 
-    // 1. Delete from Trie
-    this.trie.delete(targetContact.name, contactId);
+    // 1. Delete from Tree
+    this.tree.delete(targetContact.name, contactId);
 
     // 2. Delete from Hash Table
-    this.hashTable.delete(targetContact.phone);
+    this.hashTable.delete(cleanPhoneNumber(targetContact.phone));
 
     // 3. Remove from raw array
     this.contacts.splice(targetIndex, 1);
@@ -666,10 +701,10 @@ class PhoneDirectory {
   }
 
   /**
-   * Prefix search by name via Trie.
+   * Prefix search by name via Tree.
    */
   searchPrefix(prefix) {
-    return this.trie.searchPrefix(prefix);
+    return this.tree.searchPrefix(prefix);
   }
 
   /**
@@ -683,7 +718,8 @@ class PhoneDirectory {
    * Phone lookup via Hash Table.
    */
   searchPhone(phone) {
-    return this.hashTable.search(phone.trim());
+    const cleanPhone = cleanPhoneNumber(phone);
+    return this.hashTable.search(cleanPhone);
   }
 }
 
@@ -782,7 +818,7 @@ const directory = new PhoneDirectory();
 // DOM Elements
 const statTotalContacts = document.getElementById('stat-total-contacts');
 const statHashBuckets = document.getElementById('stat-hash-buckets');
-const statTrieNodes = document.getElementById('stat-trie-nodes');
+const statTreeNodes = document.getElementById('stat-tree-nodes');
 
 // Form
 const addContactForm = document.getElementById('add-contact-form');
@@ -850,7 +886,7 @@ function initApp() {
  */
 function loadPreloadedData() {
   // Reset existing
-  directory.trie = new Trie();
+  directory.tree = new Tree();
   directory.hashTable = new HashTable(53);
   directory.contacts = [];
   directory.sortedContacts = [];
@@ -868,7 +904,7 @@ function loadPreloadedData() {
  */
 function updateHeaderStats() {
   statTotalContacts.textContent = directory.contacts.length;
-  statTrieNodes.textContent = directory.trie.nodeCount;
+  statTreeNodes.textContent = directory.tree.nodeCount;
   statHashBuckets.textContent = directory.hashTable.capacity;
   allContactsCount.textContent = `${directory.contacts.length} Contacts`;
 }
@@ -894,7 +930,7 @@ function highlightPrefix(name, prefix) {
 }
 
 function escapeHtml(str) {
-  return str
+  return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -916,7 +952,7 @@ function getInitials(name) {
 /**
  * Builds HTML for a single Contact Card.
  */
-function createContactCardHtml(contact, matchedPrefix = '', dsaBadgeText = 'Stored in Trie & Hash Table', timeComplexity = 'O(1)') {
+function createContactCardHtml(contact, matchedPrefix = '', dsaBadgeText = 'Stored in Tree & Hash Table', timeComplexity = 'O(1)') {
   const initials = getInitials(contact.name);
   const highlightedName = highlightPrefix(contact.name, matchedPrefix);
   const formattedPhone = `${contact.phone.slice(0, 5)} ${contact.phone.slice(5)}`;
@@ -970,7 +1006,7 @@ function createContactCardHtml(contact, matchedPrefix = '', dsaBadgeText = 'Stor
 }
 
 /**
- * Builds HTML for empty states.
+ * Builds HTML for empty states and hints.
  */
 function createEmptyStateHtml(title, desc) {
   return `
@@ -982,14 +1018,14 @@ function createEmptyStateHtml(title, desc) {
           <line x1="8" y1="11" x2="14" y2="11"></line>
         </svg>
       </div>
-      <h4 class="empty-title">${title}</h4>
-      <p class="empty-desc">${desc}</p>
+      <h4 class="empty-title">${escapeHtml(title)}</h4>
+      <p class="empty-desc">${escapeHtml(desc)}</p>
     </div>
   `;
 }
 
 /* ============================================================================
- * 9. TAB 1: TRIE LIVE PREFIX SEARCH & EXACT BINARY SEARCH
+ * 9. TAB 1: TREE LIVE PREFIX SEARCH & EXACT BINARY SEARCH
  * ============================================================================ */
 
 function handleNameSearchInput() {
@@ -1003,9 +1039,9 @@ function handleNameSearchInput() {
 
   if (query.length === 0) {
     // Empty search: show all contacts sorted or default guidance
-    telemetryAlgoTitle.textContent = "Trie Prefix Autocomplete";
+    telemetryAlgoTitle.textContent = "Tree Prefix Autocomplete";
     telemetryComplexity.textContent = "Time: O(L + K) | Space: O(N · L)";
-    telemetryDescription.textContent = "Type any letter to trigger real-time Trie branch traversal. Prefix characters traverse Trie edges; subtree leaves yield matching contacts.";
+    telemetryDescription.textContent = "Type any letter to trigger real-time Tree branch traversal. Prefix characters traverse Tree edges; subtree leaves yield matching contacts.";
     statPrefixLen.textContent = "0";
     statMatchedCount.textContent = directory.contacts.length;
     statSearchTime.textContent = "0.00 ms";
@@ -1017,29 +1053,29 @@ function handleNameSearchInput() {
     return;
   }
 
-  // Execute Trie Prefix Search
+  // Execute Tree Prefix Search
   const { results, steps, nodesExplored, durationMs } = directory.searchPrefix(query);
 
   // Update telemetry
-  telemetryAlgoTitle.textContent = "Trie Prefix Search (Autocomplete)";
+  telemetryAlgoTitle.textContent = "Tree Prefix Search (Autocomplete)";
   telemetryComplexity.textContent = `Time: O(L + K) | L=${query.length}, K=${nodesExplored}`;
-  telemetryDescription.innerHTML = `Traversed <b>${steps} prefix edge(s)</b> in Trie to node <code>"${escapeHtml(query.toLowerCase())}"</code>, then explored <b>${nodesExplored} subtree node(s)</b> to gather all terminal contact leaves.`;
+  telemetryDescription.innerHTML = `Traversed <b>${steps} prefix edge(s)</b> in Tree to node <code>"${escapeHtml(query.toLowerCase())}"</code>, then explored <b>${nodesExplored} subtree node(s)</b> to gather all terminal contact leaves.`;
   statPrefixLen.textContent = query.length;
   statMatchedCount.textContent = results.length;
   statSearchTime.textContent = `${durationMs.toFixed(3)} ms`;
 
   resultsCountHeading.textContent = `Matched ${results.length} Contact(s)`;
-  resultsSubtext.textContent = `Live Trie autocomplete for prefix "${query}"`;
+  resultsSubtext.textContent = `Live Tree autocomplete for prefix "${query}"`;
 
   if (results.length === 0) {
     nameResultsList.innerHTML = createEmptyStateHtml(
       "No Contact Found",
-      `No contacts in the Trie start with the prefix "${escapeHtml(query)}". Try another prefix like "Am", "An", or "Poo".`
+      `No contacts in the Tree start with the prefix "${query}". Try another prefix like "Am", "An", or "Poo".`
     );
   } else {
-    // Sort Trie results via Merge Sort for neat display
+    // Sort Tree results via Merge Sort for neat display
     const sortedMatches = mergeSort(results, (a, b) => compareContactsByName(a, b, true));
-    renderContactGrid(nameResultsList, sortedMatches, query, `Trie Subtree Match`, 'O(L + K)');
+    renderContactGrid(nameResultsList, sortedMatches, query, `Tree Subtree Match`, 'O(L + K)');
   }
 }
 
@@ -1076,7 +1112,7 @@ function handleExactBinarySearch() {
 
     nameResultsList.innerHTML = createEmptyStateHtml(
       "No Exact Match Found",
-      `Binary Search verified that exact name "${escapeHtml(query)}" is not present in the sorted contact array (checked in ${comparisons} comparisons).`
+      `Binary Search verified that exact name "${query}" is not present in the sorted contact array (checked in ${comparisons} comparisons).`
     );
     showToast(`No exact match for "${query}".`, "error");
   }
@@ -1087,15 +1123,17 @@ function handleExactBinarySearch() {
  * ============================================================================ */
 
 function handlePhoneSearch() {
-  const phone = phoneSearchInput.value.trim();
+  const rawInput = phoneSearchInput.value;
+  const cleaned = cleanPhoneNumber(rawInput);
 
-  if (phone.length > 0) {
+  if (rawInput.trim().length > 0) {
     clearPhoneSearch.style.display = 'block';
   } else {
     clearPhoneSearch.style.display = 'none';
   }
 
-  if (phone.length === 0) {
+  // 1. Empty input state
+  if (cleaned.length === 0) {
     statPhoneBucket.textContent = "-";
     statPhoneSteps.textContent = "0";
     statPhoneCollisions.textContent = "0";
@@ -1107,10 +1145,26 @@ function handlePhoneSearch() {
     return;
   }
 
-  const { contact, bucketIndex, steps, collisions, durationMs } = directory.searchPhone(phone);
+  // 2. Fewer than 10 digits typed: show helpful hint, NOT an error or not-found
+  if (cleaned.length < 10) {
+    statPhoneBucket.textContent = "-";
+    statPhoneSteps.textContent = "0";
+    statPhoneCollisions.textContent = "0";
+    statPhoneTime.textContent = "0.00 ms";
+    phoneResultCardContainer.innerHTML = createEmptyStateHtml(
+      "Enter 10 Digits",
+      `Please enter a full 10-digit mobile number (${cleaned.length}/10 digits entered).`
+    );
+    return;
+  }
 
+  // 3. Search key: normalize to 10-digit string
+  const searchKey = cleaned.slice(0, 10);
+  const { contact, bucketIndex, steps, chainLength, collisions, durationMs } = directory.searchPhone(searchKey);
+
+  // Requirement 8: Show bucket index, chain length and search latency in the panel
   statPhoneBucket.textContent = `#${bucketIndex}`;
-  statPhoneSteps.textContent = steps;
+  statPhoneSteps.textContent = chainLength;
   statPhoneCollisions.textContent = collisions;
   statPhoneTime.textContent = `${durationMs.toFixed(3)} ms`;
 
@@ -1118,14 +1172,15 @@ function handlePhoneSearch() {
     phoneResultCardContainer.innerHTML = createContactCardHtml(
       contact,
       '',
-      `Hash Bucket #${bucketIndex} (Chain step: ${steps})`,
+      `Hash Bucket #${bucketIndex} (Chain length: ${chainLength}, Step: ${steps})`,
       'O(1) Avg'
     );
-    showToast(`Found contact in Hash Table bucket #${bucketIndex}!`, "success");
   } else {
+    // Requirement 7: Show "No contact found" message when there is no match
+    const formattedPhone = `${searchKey.slice(0, 5)} ${searchKey.slice(5)}`;
     phoneResultCardContainer.innerHTML = createEmptyStateHtml(
-      "No Contact Found for Number",
-      `Phone number "+91 ${phone}" hashed to bucket #${bucketIndex}, but was not found in the chain (${steps} nodes checked).`
+      "No Contact Found",
+      `No contact with phone number "+91 ${formattedPhone}" exists in the directory.`
     );
   }
 }
@@ -1136,7 +1191,7 @@ function handlePhoneSearch() {
 
 function renderAllContactsTab() {
   const ascending = sortDirectionSelect.value === 'asc';
-  const { durationMs } = directory.refreshSortedList(ascending);
+  directory.refreshSortedList(ascending);
 
   if (directory.sortedContacts.length === 0) {
     allContactsList.innerHTML = createEmptyStateHtml(
@@ -1266,7 +1321,7 @@ function showFormError(msg) {
  * ============================================================================ */
 
 function handleDeleteContact(contactId, contactName) {
-  const confirmed = confirm(`Are you sure you want to delete "${contactName}"?\nThis will remove it from Trie, Hash Table, and sorted directory.`);
+  const confirmed = confirm(`Are you sure you want to delete "${contactName}"?\nThis will remove it from Tree, Hash Table, and sorted directory.`);
   if (!confirmed) return;
 
   const success = directory.deleteContact(contactId);
@@ -1317,7 +1372,8 @@ function showToast(message, type = 'info') {
   toastContainer.appendChild(toast);
 
   // Trigger animation
-  requestAnimationFrame(() => {
+  const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (cb) => setTimeout(cb, 16);
+  raf(() => {
     toast.classList.add('show');
   });
 
@@ -1347,13 +1403,20 @@ function setupEventListeners() {
   // Add Contact Form
   addContactForm.addEventListener('submit', handleAddContactSubmit);
 
-  // Phone input formatting restriction: digits only
+  // Phone input in Add Contact form (accept digits only)
   contactPhoneInput.addEventListener('input', (e) => {
     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
   });
-  phoneSearchInput.addEventListener('input', (e) => {
-    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+
+  // Phone Search input: runs on 'input' event as user types, and on 'Enter'
+  phoneSearchInput.addEventListener('input', () => {
     handlePhoneSearch();
+  });
+  phoneSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handlePhoneSearch();
+    }
   });
 
   // Tab switching
@@ -1376,7 +1439,7 @@ function setupEventListeners() {
     });
   });
 
-  // Name Search input (real-time Trie prefix search)
+  // Name Search input (real-time Tree prefix search)
   nameSearchInput.addEventListener('input', handleNameSearchInput);
   clearNameSearch.addEventListener('click', () => {
     nameSearchInput.value = '';

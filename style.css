@@ -65,7 +65,7 @@ body {
 }
 
 /* ==========================================================================
-   HEADER & NOTICE
+   HEADER
    ========================================================================== */
 
 .app-header {
@@ -109,12 +109,8 @@ body {
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-}
-
-.app-subtitle {
-  font-size: 0.82rem;
-  color: #c7d2fe;
-  margin-top: 0.15rem;
+  margin: 0;
+  line-height: 1;
 }
 
 .header-stats {
@@ -144,35 +140,6 @@ body {
   font-weight: 700;
   color: #ffffff;
   font-family: var(--font-mono);
-}
-
-/* Demo Notice Banner */
-.demo-notice-bar {
-  background-color: #fef3c7;
-  border-bottom: 1px solid #fde68a;
-  padding: 0.5rem 1.5rem;
-  font-size: 0.8rem;
-  color: #92400e;
-}
-
-.demo-notice-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.badge-tag {
-  background-color: #d97706;
-  color: #ffffff;
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 0.68rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--radius-sm);
-  letter-spacing: 0.05em;
-  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -237,9 +204,7 @@ body {
 }
 
 .card-subtitle {
-  font-size: 0.92rem;
   font-weight: 700;
-  color: var(--slate-800);
   margin-bottom: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -442,7 +407,7 @@ select:focus {
   border-radius: var(--radius-sm);
 }
 
-.trie-badge {
+.tree-badge {
   background-color: #ede9fe;
   color: #6d28d9;
 }

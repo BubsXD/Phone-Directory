@@ -10,8 +10,8 @@ This project was built to demonstrate core **Data Structures and Algorithms (DSA
 
 Traditional phone book applications often use brute-force arrays or database indexes. In this project, specialized data structures were implemented from scratch to achieve optimal Big-O performance across distinct lookup modalities:
 
-1. **Live Prefix Search (Autocomplete):** Powered by a **Trie (Prefix Tree)** for instantaneous character-by-character autocomplete as the user types.
-2. **Exact Phone Lookup:** Powered by a **Custom Hash Table** with a polynomial rolling hash function and **Separate Chaining (Singly Linked List)** for collision resolution.
+1. **Live Prefix Search (Autocomplete):** Powered by a **Tree (Prefix Tree)** for instantaneous character-by-character autocomplete as the user types.
+2. **Exact Phone Lookup:** Powered by a **Custom Hash Table** with a polynomial rolling hash function and **Separate Chaining (Singly Linked List)** for collision resolution. Includes support for input formats with `+91`, spaces, and dashes.
 3. **Alphabetical Directory Listing:** Powered by a recursive **Merge Sort** (stable $O(N \log N)$ divide-and-conquer).
 4. **Exact Name Search:** Powered by an iterative **Binary Search** ($O(\log N)$) operating on the Merge Sorted contact list.
 5. **Interactive DSA Telemetry & Visualizer:** Displays real-time algorithm execution metrics, Big-O complexity badges, microsecond execution timers (`performance.now()`), and a live 53-bucket Hash Table distribution map.
@@ -44,7 +44,7 @@ Then visit: `http://localhost:8000`
 d:/Codes/DSA mini Project/
 ├── index.html     # Semantic UI layout, forms, tabs, telemetry badges & visualizer
 ├── style.css      # Clean, modern, responsive styling, color palette, badges & layout
-├── script.js     # Custom Trie, Hash Table, Merge Sort, Binary Search & UI controller
+├── script.js     # Custom Tree, Hash Table, Merge Sort, Binary Search & UI controller
 └── README.md      # Comprehensive DSA documentation, complexity table, viva guide
 ```
 
@@ -52,10 +52,10 @@ d:/Codes/DSA mini Project/
 
 ## 🧠 Data Structures & Algorithms Deep Dive
 
-### 1. Trie (Prefix Tree) — Live Name Autocomplete
-* **Why Use It?** Searching an unsorted or sorted array of $N$ contacts for prefix matches takes $O(N \cdot L)$ time. A Trie preprocesses strings into an $n$-ary tree where common prefixes share common ancestor paths. Finding all contacts starting with prefix length $L$ takes only $O(L + K)$ time (where $K$ is the number of nodes in the matching subtree), completely independent of total contacts $N$.
+### 1. Tree (Prefix Tree) — Live Name Autocomplete
+* **Why Use It?** Searching an unsorted or sorted array of $N$ contacts for prefix matches takes $O(N \cdot L)$ time. A Tree preprocesses strings into an $n$-ary tree where common prefixes share common ancestor paths. Finding all contacts starting with prefix length $L$ takes only $O(L + K)$ time (where $K$ is the number of nodes in the matching subtree), completely independent of total contacts $N$.
 * **Implementation Details:**
-  * Node: `TrieNode` contains `children` (plain JavaScript object character dictionary, no `Map`/`Set`), `isEndOfWord` flag, and a `contacts` list.
+  * Node: `TreeNode` contains `children` (plain JavaScript object character dictionary, no `Map`/`Set`), `isEndOfWord` flag, and a `contacts` list.
   * Autocomplete: Traverses $L$ prefix edges to locate the prefix root, then performs Depth-First Search (DFS) to collect all terminal contacts.
   * Deletion: Recursively prunes unused character branches when contacts are deleted, preventing memory leaks.
 * **Complexities:**
@@ -68,10 +68,11 @@ d:/Codes/DSA mini Project/
 
 ### 2. Custom Hash Table — Exact Phone Number Lookup
 * **Why Use It?** Phone numbers are unique 10-digit identifiers. A Hash Table provides instantaneous average $O(1)$ lookup, insertion, and deletion.
+* **Key Normalization:** Input is sanitized before indexing and lookup (`cleanPhoneNumber` strips `+91`, `91`, whitespace, and hyphens so both `+91 98230 12345` and `9823012345` resolve consistently). Phone numbers are strictly treated and stored as strings.
 * **Hash Function:** Polynomial Rolling Hash with prime base $P = 31$ and prime capacity $M = 53$:
   $$\text{hash}(key) = \left( \sum_{i=0}^{L-1} \text{key}[i] \times 31^{L-1-i} \right) \bmod 53$$
   Using prime numbers ($31$ and $53$) drastically reduces clustering and distributes uniform hash values across numeric keys.
-* **Collision Resolution:** **Separate Chaining** using custom `HashNode` singly linked list nodes (`key`, `value`, `next`). When multiple phone numbers hash to the same bucket index, they are chained together.
+* **Collision Resolution:** **Separate Chaining** using custom `HashNode` singly linked list nodes (`key`, `value`, `next`). When multiple phone numbers hash to the same bucket index, they form a linked list chain. Exact key equality is verified with strict `===` string comparison.
 * **Complexities:**
   * **Insertion:** Average $O(1)$, Worst $O(N)$ (all keys collide into one bucket).
   * **Lookup:** Average $O(1)$, Worst $O(N)$.
@@ -113,25 +114,25 @@ d:/Codes/DSA mini Project/
 
 | Operation | Primary Algorithm / Structure | Best Time | Average Time | Worst Time | Space Complexity | Why Chosen? |
 | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Prefix Autocomplete** | **Trie (Prefix Tree)** | $O(L)$ | $O(L + K)$ | $O(L + K)$ | $O(N \cdot L)$ | Real-time keystroke suggestions independent of directory size $N$. |
+| **Prefix Autocomplete** | **Tree (Prefix Tree)** | $O(L)$ | $O(L + K)$ | $O(L + K)$ | $O(N \cdot L)$ | Real-time keystroke suggestions independent of directory size $N$. |
 | **Phone Number Lookup** | **Hash Table (Separate Chaining)** | $O(1)$ | $O(1)$ | $O(N)$ | $O(M + N)$ | Direct bucket indexing using polynomial rolling hash. |
 | **Directory Sorting** | **Merge Sort** | $O(N \log N)$ | $O(N \log N)$ | $O(N \log N)$ | $O(N)$ | Guaranteed $O(N \log N)$ and stable sorting for A-Z display. |
 | **Exact Name Search** | **Binary Search** | $O(1)$ | $O(\log N)$ | $O(\log N)$ | $O(1)$ | Logarithmic search over Merge-sorted array. |
-| **Contact Insertion** | **Trie + Hash Table + Merge Sort** | $O(L + 1)$ | $O(N \log N)$ | $O(N \log N)$ | $O(N)$ | Synchronizes all 3 structures; checks phone duplicate in $O(1)$. |
-| **Contact Deletion** | **Trie + Hash Table + Array Filter** | $O(L + 1)$ | $O(N)$ | $O(N)$ | $O(1)$ | Recursive branch cleanup in Trie, linked list node bypass in Hash Table. |
+| **Contact Insertion** | **Tree + Hash Table + Merge Sort** | $O(L + 1)$ | $O(N \log N)$ | $O(N \log N)$ | $O(N)$ | Synchronizes all 3 structures; checks phone duplicate in $O(1)$. |
+| **Contact Deletion** | **Tree + Hash Table + Array Filter** | $O(L + 1)$ | $O(N)$ | $O(N)$ | $O(1)$ | Recursive branch cleanup in Tree, linked list node bypass in Hash Table. |
 
 *Notation:*
 - $N$: Total number of contacts in the directory.
 - $L$: Length of the contact name or search prefix.
-- $K$: Number of nodes in the matched Trie subtree.
+- $K$: Number of nodes in the matched Tree subtree.
 - $M$: Number of hash buckets (fixed prime capacity $M = 53$).
 
 ---
 
 ## 🎓 Viva Questions & Model Answers
 
-### Q1: Why did you choose a Trie instead of a Hash Table for name search?
-> **Answer:** A Hash Table requires the exact full key to compute an index ($O(1)$ for exact match), but it **cannot perform prefix searches or autocompletion efficiently** because hashing randomizes the distribution of strings with common prefixes. A Trie naturally preserves character prefixes in tree hierarchies, allowing prefix lookup in $O(L + K)$ where $L$ is the prefix length and $K$ is the number of matching results, completely independent of the total contact count $N$.
+### Q1: Why did you choose a Tree (Prefix Tree) instead of a Hash Table for name search?
+> **Answer:** A Hash Table requires the exact full key to compute an index ($O(1)$ for exact match), but it **cannot perform prefix searches or autocompletion efficiently** because hashing randomizes the distribution of strings with common prefixes. A Tree naturally preserves character prefixes in tree hierarchies, allowing prefix lookup in $O(L + K)$ where $L$ is the prefix length and $K$ is the number of matching results, completely independent of the total contact count $N$.
 
 ### Q2: Why use prime numbers for the Hash Table capacity and polynomial base?
 > **Answer:** We used prime capacity $M = 53$ and prime base $P = 31$. In modular arithmetic, coprime numbers minimize common divisors with character code sequences, preventing systematic collisions and producing a uniform hash distribution across phone number strings.
@@ -145,8 +146,8 @@ d:/Codes/DSA mini Project/
 ### Q5: How do you keep all data structures in sync when a contact is deleted?
 > **Answer:** When `deleteContact(id)` is called:
 > 1. It locates the contact object.
-> 2. Calls `trie.delete(name, id)` which uses recursive backtracking to unset `isEndOfWord` and prune empty character child nodes.
-> 3. Calls `hashTable.delete(phone)` which traverses the bucket's linked list and unlinks the node by pointer manipulation (`prev.next = current.next`).
+> 2. Calls `tree.delete(name, id)` which uses recursive backtracking to unset `isEndOfWord` and prune empty character child nodes.
+> 3. Calls `hashTable.delete(cleanPhone)` which traverses the bucket's linked list and unlinks the node by pointer manipulation (`prev.next = current.next`).
 > 4. Removes the record from the contact list array and re-executes `mergeSort` to refresh the sorted view.
 
 ---
@@ -163,9 +164,3 @@ The directory comes preloaded with **30 realistic Indian dummy contacts** design
 - **"Vi-" prefix:** *Vikas Kumar, Vikram Rathore, Vishal Deshmukh, Varun Chopra, Vidya Bhat*
 
 You can also click **"+10 Random Contacts"** to dynamically generate and insert new mock contacts, or click **"Reset Default 30"** at any time.
-
----
-
-## 🛡️ License & Academic Notice
-
-This project was developed strictly for academic demonstration and DSA viva examination. All preloaded contact names and phone numbers are randomly generated mock entries.
